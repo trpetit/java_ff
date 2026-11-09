@@ -1,0 +1,4 @@
+// Lets IntelliJ open the repository root and import the backend automatically.
+// The backend is still a standalone Gradle project: cd backend && ./gradlew ...
+rootProject.name = 'conduit'
+includeBuild 'backend'

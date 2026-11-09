@@ -1,0 +1,44 @@
+package io.github.raeperd.realworld.application.article.comment;
+
+import io.github.raeperd.realworld.domain.article.comment.CommentService;
+import io.github.raeperd.realworld.domain.jwt.JWTPayload;
+import io.github.raeperd.realworld.infrastructure.jwt.UserJWTPayload;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+
+import static java.util.Optional.ofNullable;
+
+@RestController
+class CommentRestController {
+
+    private final CommentService commentService;
+
+    CommentRestController(CommentService commentService) {
+        this.commentService = commentService;
+    }
+
+    @PostMapping("/articles/{slug}/comments")
+    public CommentResponse postComments(@AuthenticationPrincipal UserJWTPayload jwtPayload,
+                                     @PathVariable String slug, @Valid @RequestBody CommentPostRequestDTO dto) {
+        final var commentAdded = commentService.createComment(jwtPayload.getUserId(), slug, dto.body());
+        return CommentResponse.fromComment(commentAdded);
+    }
+
+    @GetMapping("/articles/{slug}/comments")
+    public MultipleCommentsResponse getComments(@AuthenticationPrincipal UserJWTPayload jwtPayload,
+                                            @PathVariable String slug) {
+        final var comments = ofNullable(jwtPayload)
+                .map(JWTPayload::getUserId)
+                .map(userId -> commentService.getComments(userId, slug))
+                .orElseGet(() -> commentService.getComments(slug));
+        return MultipleCommentsResponse.fromComments(comments);
+    }
+
+    @DeleteMapping("/articles/{slug}/comments/{id}")
+    public void deleteComment(@AuthenticationPrincipal UserJWTPayload jwtPayload,
+                              @PathVariable String slug, @PathVariable long id) {
+        commentService.deleteCommentById(jwtPayload.getUserId(), slug, id);
+    }
+}
